@@ -222,6 +222,14 @@ textarea{resize:none;}
       <div id="kanban-lines"><div style="font-size:12px;color:var(--text3);">Añade horas para ver el resumen</div></div>
     </div>
     <button onclick="hourEntries=[];persist();renderHours();" class="btn-ghost" style="width:100%;margin-top:10px;font-size:12px;">Nueva jornada (limpiar)</button>
+
+    <div style="height:0.5px;background:var(--border);margin:16px 0;"></div>
+    <div class="sec-hd">Datos y backup</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button class="btn-primary" onclick="exportData()" style="font-size:12px;"><i class="ti ti-download" aria-hidden="true"></i> Exportar</button>
+      <button class="btn-ghost" onclick="document.getElementById('import-file').click()" style="font-size:12px;"><i class="ti ti-upload" aria-hidden="true"></i> Importar</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5;">Exporta para hacer backup o para mover tus datos a otro dispositivo. Importa el archivo para restaurarlos.</div>
   </div>
 
 </div>
@@ -277,8 +285,14 @@ textarea{resize:none;}
       <button class="btn-ghost" onclick="closeModal('project')">Cancelar</button>
       <button class="btn-primary" id="pj-save-btn" onclick="saveProjectModal()"><i class="ti ti-check" aria-hidden="true"></i> Guardar</button>
     </div>
+    <div id="pj-delete-wrap" style="display:none;margin-top:8px;">
+      <button class="btn-danger" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="deleteProject(editingProjId)"><i class="ti ti-trash" aria-hidden="true"></i> Eliminar proyecto</button>
+    </div>
   </div>
 </div>
+
+<!-- HIDDEN FILE INPUT FOR IMPORT -->
+<input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)"/>
 
 <!-- SAVE STATUS -->
 <div class="save-status" id="save-status">Guardado</div>
@@ -431,6 +445,7 @@ function addNewProject(){
   document.getElementById('pj-owner').value='';
   document.getElementById('pj-next').value='';
   document.getElementById('pj-notes').value='';
+  document.getElementById('pj-delete-wrap').style.display='none';
   openModal('project');
 }
 
@@ -446,6 +461,7 @@ function editProject(id){
   document.getElementById('pj-owner').value=p.owner||'';
   document.getElementById('pj-next').value=p.next||'';
   document.getElementById('pj-notes').value=p.notes||'';
+  document.getElementById('pj-delete-wrap').style.display='block';
   openModal('project');
 }
 
@@ -610,6 +626,45 @@ function copyKanban(){
     const btn=document.getElementById('copy-btn');btn.style.background='var(--accent2)';btn.innerHTML='<i class="ti ti-check"></i> Copiado';
     setTimeout(()=>{btn.style.background='var(--accent)';btn.innerHTML='<i class="ti ti-copy"></i> Copiar';},2000);
   });
+}
+
+
+function exportData(){
+  const d={v:1,date:new Date().toISOString(),projects,todos,hourEntries};
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const dateStr=new Date().toISOString().split('T')[0];
+  a.href=url;a.download='sail-manager-backup-'+dateStr+'.json';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  showSaved();
+}
+
+function importData(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!d.projects)throw new Error('Formato inválido');
+      if(!confirm('Esto reemplazará todos tus datos actuales. ¿Continuar?'))return;
+      projects=d.projects||[];
+      todos=d.todos||[];
+      hourEntries=d.hourEntries||[];
+      persist();
+      renderDaily();
+      renderProjects(projFilter);
+      renderHours();
+      updateBillOpts();
+      alert('Datos importados — '+projects.length+' proyectos cargados');
+    }catch(err){
+      alert('Error al importar: '+err.message);
+    }
+    event.target.value='';
+  };
+  reader.readAsText(file);
 }
 
 function openModal(t){document.getElementById('modal-'+t).classList.add('open');}
