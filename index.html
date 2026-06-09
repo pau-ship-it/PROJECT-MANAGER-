@@ -209,7 +209,21 @@ body::after{
 .health-label{font-family:var(--font-head);font-size:8px;text-align:center;margin-bottom:16px;}
 .health-bar-wrap{height:16px;background:var(--bg2);border:2px solid var(--border2);margin-bottom:20px;overflow:hidden;}
 .health-bar{height:100%;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 8px,var(--accent-dark) 8px,var(--accent-dark) 10px);transition:width .5s steps(10);}
-.ecg-wrap{background:var(--bg0);border:2px solid var(--border2);padding:6px;margin-bottom:16px;overflow:hidden;}
+
+/* PIPELINE CHECKLIST */
+.pipeline-wrap{background:var(--bg2);border:2px solid var(--border2);padding:12px;margin-bottom:10px;}
+.pipeline-title{font-family:var(--font-head);font-size:7px;color:var(--accent);margin-bottom:10px;}
+.pipeline-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border2);cursor:pointer;}
+.pipeline-item:last-child{border-bottom:none;}
+.pipeline-check{width:18px;height:18px;border:2px solid var(--border2);background:var(--bg0);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .1s;}
+.pipeline-check.done{border-color:var(--accent);background:var(--accent-glow);color:var(--accent);}
+.pipeline-label{font-family:var(--font-head);font-size:7px;color:var(--text2);flex:1;line-height:1.6;}
+.pipeline-label.done{color:var(--accent);text-decoration:line-through;}
+.pipeline-bar-wrap{height:6px;background:var(--bg0);border:1px solid var(--border2);margin-top:10px;}
+.pipeline-bar{height:100%;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 6px,var(--accent-dark) 6px,var(--accent-dark) 8px);transition:width .3s steps(6);}
+.pipeline-pct{font-family:var(--font-head);font-size:6px;color:var(--text3);margin-top:4px;text-align:right;}
+
+.ecg-wrap{background:var(--bg0);border:2px solid var(--border2);padding:6px;margin-bottom:16px;overflow:hidden;border-radius:0;}
 .health-factor{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border:1px solid var(--border2);margin-bottom:6px;font-size:14px;}
 .health-factor-label{font-family:var(--font-head);font-size:6px;color:var(--text2);}
 .health-factor-val{font-family:var(--font-head);font-size:8px;}
@@ -457,7 +471,8 @@ textarea{resize:none;}
       <button class="px-btn" onclick="exportData()" style="justify-content:center;">EXPORT</button>
       <button class="px-btn muted" onclick="document.getElementById('import-file').click()" style="justify-content:center;">IMPORT</button>
     </div>
-    <div style="font-size:13px;color:var(--text3);line-height:1.5;">EXPORT TO BACKUP OR SYNC BETWEEN DEVICES.</div>
+    <button class="px-btn" onclick="shareViaWhatsApp()" style="width:100%;justify-content:center;border-color:#25D366;color:#25D366;box-shadow:0 4px 0 0 #0a3d1a,4px 0 0 0 #0a3d1a;margin-bottom:8px;">&#9654; SEND TO WHATSAPP (SELF)</button>
+    <div style="font-size:13px;color:var(--text3);line-height:1.5;">EXPORT downloads a JSON backup. WHATSAPP sends it to yourself to open on another device.</div>
   </div>
 
 </div>
@@ -507,6 +522,16 @@ textarea{resize:none;}
     </div>
     <div style="margin-bottom:10px;"><label class="form-label">NEXT ACTION</label><input type="text" id="pj-next"/></div>
     <div style="margin-bottom:10px;"><label class="form-label">NOTES</label><textarea id="pj-notes" style="height:48px;"></textarea></div>
+
+
+    <div id="pipeline-wrap" style="display:none;margin-bottom:10px;">
+      <div class="pipeline-wrap">
+        <div class="pipeline-title">&#9658; PROJECT PIPELINE</div>
+        <div id="pipeline-items"></div>
+        <div class="pipeline-bar-wrap"><div class="pipeline-bar" id="pipeline-bar" style="width:0%"></div></div>
+        <div class="pipeline-pct" id="pipeline-pct">0 / 5 COMPLETE</div>
+      </div>
+    </div>
 
     <div id="notes-history-wrap" style="display:none;margin-bottom:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -740,6 +765,41 @@ function renderHealth(){
 }
 
 
+
+// PIPELINE STEPS
+const PIPELINE_STEPS=["Quoted","Order Done","Design Accepted","Production Sheet","Material Ordered","Material in Loft"];
+
+function renderPipeline(p){
+  if(!p.pipeline)p.pipeline={};
+  const wrap=document.getElementById("pipeline-items");
+  wrap.innerHTML=PIPELINE_STEPS.map((step,i)=>{
+    const done=p.pipeline[i]||false;
+    return `<div class="pipeline-item" onclick="togglePipelineStep(${i})">
+      <div class="pipeline-check ${done?"done":""}">${done?"&#10003;":""}</div>
+      <div class="pipeline-label ${done?"done":""}">${step}</div>
+      ${done?`<span style="font-size:10px;color:var(--text3);font-family:var(--font-head);">DONE</span>`:`<span style="font-size:10px;color:var(--text3);">--</span>`}
+    </div>`;
+  }).join("");
+  updatePipelineBar(p);
+}
+
+function togglePipelineStep(idx){
+  if(!editingProjId)return;
+  const p=projects.find(x=>x.id===editingProjId);if(!p)return;
+  if(!p.pipeline)p.pipeline={};
+  p.pipeline[idx]=!p.pipeline[idx];
+  if(p.pipeline[idx])addXP(15,"PIPELINE STEP DONE");
+  persist();renderPipeline(p);
+}
+
+function updatePipelineBar(p){
+  if(!p.pipeline)p.pipeline={};
+  const done=Object.values(p.pipeline).filter(Boolean).length;
+  const pct=Math.round(done/PIPELINE_STEPS.length*100);
+  document.getElementById("pipeline-bar").style.width=pct+"%";
+  document.getElementById("pipeline-pct").textContent=done+" / "+PIPELINE_STEPS.length+" COMPLETE";
+}
+
 // ECG CANVAS ANIMATION
 let ecgAnim=null;
 let ecgScore=100;
@@ -760,7 +820,7 @@ function startECG(score){
   let color,speed,amplitude,frequency;
   if(score>=75){color="#9d4eff";speed=2;amplitude=18;frequency=0.08;}
   else if(score>=45){color="#ff8800";speed=3;amplitude=24;frequency=0.12;}
-  else if(score>=20){color="#ff2244";speed=4.5;amplitude=28;frequency=0.18;}
+  else if(score>=20){color="#ff2244";speed=4.5;amplitude=22;frequency=0.18;}
   else{color="#3d3560";speed=0;amplitude=0;frequency=0;}
 
   // Draw grid
@@ -810,7 +870,8 @@ function startECG(score){
     ctx.beginPath();
 
     for(let x=0;x<W;x++){
-      const y=H/2-(score<20?flatlineWave(x,t):ecgWave(x,t,amplitude,frequency));
+      const raw=score<20?flatlineWave(x,t):ecgWave(x,t,amplitude,frequency);
+      const y=Math.max(3,Math.min(H-3,H/2-raw));
       if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
     }
     ctx.stroke();
@@ -818,7 +879,7 @@ function startECG(score){
     // Scanning dot
     if(score>=20){
       const dotX=(t*speed*60)%W;
-      const dotY=H/2-ecgWave(dotX,t,amplitude,frequency);
+      const dotY=Math.max(3,Math.min(H-3,H/2-ecgWave(dotX,t,amplitude,frequency)));
       ctx.beginPath();
       ctx.arc(dotX,dotY,3,0,Math.PI*2);
       ctx.fillStyle=color;
@@ -923,12 +984,14 @@ function projCard(p){
   const urgDot={alta:"var(--red)",media:"var(--amber)",baja:"var(--text3)"};
   const db=daysBadge(p.deadline);
   const nc=p.history&&p.history.length?`<span style="font-size:11px;color:var(--accent4);margin-left:4px;">[LOG:${p.history.length}]</span>`:"";
+  const pip=p.pipeline?Object.values(p.pipeline).filter(Boolean).length:0;
+  const pipBadge=pip>0?`<span style="font-size:11px;color:var(--accent2);margin-left:4px;">[${pip}/${PIPELINE_STEPS.length}]</span>`:"";
   return `<div class="px-card ${p.status}" onclick="editProject(${p.id})">
     <div style="display:flex;align-items:flex-start;gap:10px;">
       <div class="pdot" style="background:${urgDot[p.urgency]};margin-top:5px;"></div>
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:4px;">
-          <span class="proj-name">${p.name}</span>${nc}
+          <span class="proj-name">${p.name}</span>${nc}${pipBadge}
         </div>
         <div class="proj-next">${p.next||"--"}</div>
         ${p.deadline?`<div style="margin-top:6px;">${db}</div>`:""}
@@ -945,6 +1008,7 @@ function addNewProject(){
   document.getElementById("pj-status").value="gestion";
   document.getElementById("pj-urgency").value="media";
   document.getElementById("pj-delete-wrap").style.display="none";
+  document.getElementById("pipeline-wrap").style.display="none";
   document.getElementById("notes-history-wrap").style.display="none";
   document.getElementById("share-wrap").style.display="none";
   document.getElementById("verdict-wrap").style.display="none";
@@ -963,11 +1027,12 @@ function editProject(id){
   document.getElementById("pj-next").value=p.next||"";
   document.getElementById("pj-notes").value=p.notes||"";
   document.getElementById("pj-delete-wrap").style.display="block";
+  document.getElementById("pipeline-wrap").style.display="block";
   document.getElementById("notes-history-wrap").style.display="block";
   document.getElementById("share-wrap").style.display="block";
   document.getElementById("verdict-wrap").style.display="block";
   document.getElementById("share-box").style.display="none";
-  renderNotesHistory(p);generateVerdict(p);
+  renderPipeline(p);renderNotesHistory(p);generateVerdict(p);
   openModal("project");
 }
 function renderNotesHistory(p){
@@ -1074,6 +1139,32 @@ function exportData(){
   const url=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=url;a.download="sail-mgr-"+new Date().toISOString().split("T")[0]+".json";
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);showSaved();
+}
+
+function shareViaWhatsApp(){
+  var d={v:2,date:new Date().toISOString(),projects:projects,todos:todos,hourEntries:hourEntries};
+  var dateStr=new Date().toLocaleDateString("es-ES");
+  var jsonStr=JSON.stringify(d,null,2);
+  var fileName="sail-mgr-"+new Date().toISOString().split("T")[0]+".json";
+  if(navigator.share){
+    var blob=new Blob([jsonStr],{type:"application/json"});
+    var file=new File([blob],fileName,{type:"application/json"});
+    var shareData={title:"SAIL.MGR Backup",text:"Sail Manager backup "+dateStr};
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      shareData.files=[file];
+    }
+    navigator.share(shareData).catch(function(err){
+      var short="SAIL.MGR BACKUP "+dateStr+" | "+projects.length+" projects. Import file manually.";
+      window.open("https://wa.me/?text="+encodeURIComponent(short),"_blank");
+    });
+  } else {
+    navigator.clipboard.writeText(jsonStr).then(function(){
+      showToast("JSON COPIED TO CLIPBOARD");
+      setTimeout(function(){
+        window.open("https://web.whatsapp.com/","_blank");
+      },1500);
+    });
+  }
 }
 function importData(event){
   const file=event.target.files[0];if(!file)return;
