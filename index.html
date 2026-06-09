@@ -335,9 +335,9 @@ textarea{resize:none;}
   <div class="view active" id="view-daily">
     <div class="metrics">
       <div class="metric"><div class="metric-label">ACTIVE</div><div class="metric-val" id="m-total">00</div></div>
-      <div class="metric"><div class="metric-label">PROD</div><div class="metric-val" id="m-prod" style="color:var(--accent);">00</div></div>
-      <div class="metric"><div class="metric-label">CRIT</div><div class="metric-val" id="m-crit" style="color:var(--red);">00</div></div>
-      <div class="metric"><div class="metric-label">QUEUE</div><div class="metric-val" id="m-gest" style="color:var(--amber);">00</div></div>
+      <div class="metric"><div class="metric-label">IN PROG</div><div class="metric-val" id="m-prod" style="color:var(--accent);">00</div></div>
+      <div class="metric"><div class="metric-label">URGENT</div><div class="metric-val" id="m-crit" style="color:var(--red);">00</div></div>
+      <div class="metric"><div class="metric-label">ON HOLD</div><div class="metric-val" id="m-gest" style="color:var(--amber);">00</div></div>
     </div>
 
     <div class="sec-hd">ALERTS</div>
@@ -366,11 +366,11 @@ textarea{resize:none;}
     </div>
     <div class="chips">
       <button class="chip active" onclick="filterProj('all',this)">ALL</button>
-      <button class="chip" onclick="filterProj('critico',this)">CRIT</button>
-      <button class="chip" onclick="filterProj('produccion',this)">PROD</button>
-      <button class="chip" onclick="filterProj('gestion',this)">QUEUE</button>
-      <button class="chip" onclick="filterProj('listo',this)">DONE</button>
-      <button class="chip" onclick="filterProj('aplazado',this)">HOLD</button>
+      <button class="chip" onclick="filterProj('critico',this)">URGENT</button>
+      <button class="chip" onclick="filterProj('produccion',this)">IN PROG</button>
+      <button class="chip" onclick="filterProj('gestion',this)">ON HOLD</button>
+      <button class="chip" onclick="filterProj('listo',this)">READY</button>
+      <button class="chip" onclick="filterProj('aplazado',this)">PARKED</button>
     </div>
     <div id="proj-list"></div>
     <button class="px-btn" style="width:100%;margin-top:6px;" onclick="addNewProject()">[ + NEW PROJECT ]</button>
@@ -421,58 +421,64 @@ textarea{resize:none;}
     </div>
   </div>
 
-  <!-- HOURS / LOG -->
+  <!-- STATS / SYNC -->
   <div class="view" id="view-hours">
-    <div class="hours-summary">
-      <div style="font-family:var(--font-head);font-size:7px;color:var(--text3);margin-bottom:8px;">SESSION LOG</div>
-      <div style="display:flex;align-items:baseline;justify-content:space-between;">
-        <div style="font-family:var(--font-head);font-size:22px;color:var(--accent);">
-          <span id="total-hours">0</span><span style="font-size:8px;color:var(--text3);margin-left:6px;">/ 8H</span>
-        </div>
-        <div style="display:flex;gap:16px;">
-          <div style="text-align:right;"><div style="font-family:var(--font-head);font-size:12px;color:var(--accent);" id="bill-hours">0H</div><div style="font-size:10px;color:var(--text3);font-family:var(--font-head);">BILL</div></div>
-          <div style="text-align:right;"><div style="font-family:var(--font-head);font-size:12px;color:var(--text3);" id="nobill-hours">0H</div><div style="font-size:10px;color:var(--text3);font-family:var(--font-head);">FREE</div></div>
-        </div>
+
+    <div class="sec-hd">DEPARTMENT OVERVIEW</div>
+
+    <!-- STAT CARDS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+      <div style="background:var(--bg1);border:2px solid var(--border2);padding:12px;">
+        <div style="font-family:var(--font-head);font-size:6px;color:var(--text3);margin-bottom:6px;">TOTAL PROJECTS</div>
+        <div style="font-family:var(--font-head);font-size:22px;color:var(--accent);" id="stat-total">00</div>
+      </div>
+      <div style="background:var(--bg1);border:2px solid var(--border2);padding:12px;">
+        <div style="font-family:var(--font-head);font-size:6px;color:var(--text3);margin-bottom:6px;">URGENT</div>
+        <div style="font-family:var(--font-head);font-size:22px;color:var(--red);" id="stat-urgent">00</div>
+      </div>
+      <div style="background:var(--bg1);border:2px solid var(--border2);padding:12px;">
+        <div style="font-family:var(--font-head);font-size:6px;color:var(--text3);margin-bottom:6px;">IN PROGRESS</div>
+        <div style="font-family:var(--font-head);font-size:22px;color:var(--accent);" id="stat-progress">00</div>
+      </div>
+      <div style="background:var(--bg1);border:2px solid var(--border2);padding:12px;">
+        <div style="font-family:var(--font-head);font-size:6px;color:var(--text3);margin-bottom:6px;">ON HOLD</div>
+        <div style="font-family:var(--font-head);font-size:22px;color:var(--amber);" id="stat-hold">00</div>
       </div>
     </div>
 
-    <div class="sec-hd">HOURS LOG</div>
-    <div id="hour-entries"></div>
-
-    <select id="new-proj" style="width:100%;margin-bottom:8px;font-size:14px;">
-      <option value="">SELECT PROJECT...</option>
-      <optgroup label="BILLABLE" id="billable-opts"></optgroup>
-      <optgroup label="NON-BILLABLE">
-        <option value="Oficina tecnica|nobill">Oficina tecnica</option>
-        <option value="Reuniones internas|nobill">Reuniones internas</option>
-        <option value="Gestion admin|nobill">Gestion admin</option>
-        <option value="Limpieza nave|nobill">Limpieza nave</option>
-        <option value="Organizacion velas|nobill">Organizacion velas</option>
-        <option value="Mantenimiento maquinas|nobill">Mantenimiento maquinas</option>
-        <option value="Trainning|nobill">Trainning</option>
-        <option value="I+D|nobill">I+D</option>
-      </optgroup>
-    </select>
-    <button class="px-btn" style="width:100%;margin-bottom:16px;" onclick="addEntry()">[ + LOG HOURS ]</button>
-
-    <div class="kanban-box">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="font-family:var(--font-head);font-size:7px;color:var(--text3);">KANBANIZE EXPORT</div>
-        <button id="copy-btn" onclick="copyKanban()" class="px-btn sm">COPY</button>
+    <!-- DONUT CHART -->
+    <div style="background:var(--bg1);border:2px solid var(--border2);padding:16px;margin-bottom:16px;">
+      <div style="font-family:var(--font-head);font-size:7px;color:var(--accent);margin-bottom:14px;">> STATUS BREAKDOWN</div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <canvas id="stats-chart" width="120" height="120" style="flex-shrink:0;"></canvas>
+        <div id="chart-legend" style="flex:1;"></div>
       </div>
-      <div id="kanban-lines"><div style="font-size:13px;color:var(--text3);">> AWAITING DATA...</div></div>
     </div>
 
-    <button onclick="hourEntries=[];persist();renderHours();" class="px-btn muted" style="width:100%;margin-top:10px;">NEW SESSION</button>
+    <!-- DEADLINES THIS MONTH -->
+    <div style="background:var(--bg1);border:2px solid var(--border2);padding:14px;margin-bottom:16px;">
+      <div style="font-family:var(--font-head);font-size:7px;color:var(--accent);margin-bottom:12px;">> UPCOMING DEADLINES</div>
+      <div id="upcoming-deadlines"></div>
+    </div>
 
-    <div style="height:2px;background:var(--border2);margin:18px 0;"></div>
-    <div class="sec-hd">BACKUP</div>
+    <!-- OWNER BREAKDOWN -->
+    <div style="background:var(--bg1);border:2px solid var(--border2);padding:14px;margin-bottom:20px;">
+      <div style="font-family:var(--font-head);font-size:7px;color:var(--accent);margin-bottom:12px;">> BY OWNER</div>
+      <div id="owner-breakdown"></div>
+    </div>
+
+    <!-- SYNC -->
+    <div style="height:2px;background:var(--border2);margin-bottom:16px;"></div>
+    <div class="sec-hd">SYNC & BACKUP</div>
+
+    <button class="px-btn" onclick="shareViaWhatsApp()" style="width:100%;justify-content:center;border-color:#25D366;color:#25D366;box-shadow:0 4px 0 0 #0a3d1a,4px 0 0 0 #0a3d1a;margin-bottom:10px;font-size:8px;">&#9654; SEND BACKUP TO WHATSAPP</button>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <button class="px-btn" onclick="exportData()" style="justify-content:center;">EXPORT</button>
-      <button class="px-btn muted" onclick="document.getElementById('import-file').click()" style="justify-content:center;">IMPORT</button>
+      <button class="px-btn" onclick="exportData()" style="justify-content:center;">EXPORT JSON</button>
+      <button class="px-btn muted" onclick="document.getElementById('import-file').click()" style="justify-content:center;">IMPORT JSON</button>
     </div>
-    <button class="px-btn" onclick="shareViaWhatsApp()" style="width:100%;justify-content:center;border-color:#25D366;color:#25D366;box-shadow:0 4px 0 0 #0a3d1a,4px 0 0 0 #0a3d1a;margin-bottom:8px;">&#9654; SEND TO WHATSAPP (SELF)</button>
-    <div style="font-size:13px;color:var(--text3);line-height:1.5;">EXPORT downloads a JSON backup. WHATSAPP sends it to yourself to open on another device.</div>
+    <div style="font-size:13px;color:var(--text3);line-height:1.6;">Send backup to yourself on WhatsApp to sync between devices. Or use EXPORT / IMPORT manually.</div>
+
   </div>
 
 </div>
@@ -483,7 +489,7 @@ textarea{resize:none;}
   <button class="nav-tab" onclick="nav('projects',this)"><span class="nav-icon">&#9782;</span>PROJ</button>
   <button class="nav-tab" onclick="nav('health',this)"><span class="nav-icon">&#9829;</span>HEALTH</button>
   <button class="nav-tab" onclick="nav('calendar',this)"><span class="nav-icon">&#9632;</span>CAL</button>
-  <button class="nav-tab" onclick="nav('hours',this)" style="position:relative;"><span class="nav-icon">&#9654;</span>LOG<span class="nav-dot" id="hours-dot" style="display:none;"></span></button>
+  <button class="nav-tab" onclick="nav('hours',this)" style="position:relative;"><span class="nav-icon">&#9636;</span>STATS<span class="nav-dot" id="hours-dot" style="display:none;"></span></button>
 </div>
 
 <!-- MODAL EVENT -->
@@ -513,7 +519,7 @@ textarea{resize:none;}
     <div class="modal-title" id="proj-modal-title">> NEW PROJECT</div>
     <div style="margin-bottom:10px;"><label class="form-label">NAME</label><input type="text" id="pj-name" placeholder="PROJECT NAME..."/></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-      <div><label class="form-label">STATUS</label><select id="pj-status"><option value="produccion">PROD</option><option value="gestion">QUEUE</option><option value="critico">CRIT</option><option value="listo">DONE</option><option value="aplazado">HOLD</option></select></div>
+      <div><label class="form-label">STATUS</label><select id="pj-status"><option value="produccion">IN PROGRESS — working on it</option><option value="gestion">ON HOLD — waiting for something</option><option value="critico">URGENT — needs attention now [-HEALTH]</option><option value="listo">READY — done, pending delivery</option><option value="aplazado">PARKED — paused indefinitely</option></select></div>
       <div><label class="form-label">URGENCY</label><select id="pj-urgency"><option value="alta">HIGH</option><option value="media">MED</option><option value="baja">LOW</option></select></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
@@ -576,7 +582,7 @@ textarea{resize:none;}
 <div class="save-status" id="save-status">SAVED &#9632;</div>
 
 <script>
-const SLT={produccion:"PROD",gestion:"QUEUE",critico:"CRIT",listo:"DONE",aplazado:"HOLD"};
+const SLT={produccion:"IN PROGRESS",gestion:"ON HOLD",critico:"URGENT",listo:"READY",aplazado:"PARKED"};
 const SB={produccion:"b-green",gestion:"b-amber",critico:"b-red",listo:"b-cyan",aplazado:"b-gray"};
 const PO={critico:0,produccion:1,listo:2,gestion:3,aplazado:4};
 const UO={alta:0,media:1,baja:2};
@@ -923,14 +929,14 @@ function nav(id,el){
   document.querySelectorAll(".nav-tab").forEach(n=>n.classList.remove("active"));
   document.getElementById("view-"+id).classList.add("active");
   if(el)el.classList.add("active");
-  const t={daily:"DAILY",projects:"PROJECTS",health:"DEPT HEALTH",calendar:"CALENDAR",hours:"SESSION LOG"};
+  const t={daily:"DAILY",projects:"PROJECTS",health:"DEPT HEALTH",calendar:"CALENDAR",hours:"STATS & SYNC"};
   document.getElementById("view-sub").textContent=t[id]||id.toUpperCase();
   if(id!=="health")stopECG();
   if(id==="daily")renderDaily();
   if(id==="calendar")renderCal();
   if(id==="projects")renderProjects(projFilter);
   if(id==="health")renderHealth();
-  if(id==="hours"){document.getElementById("hours-dot").style.display="none";renderHours();updateBillOpts();}
+  if(id==="hours"){document.getElementById("hours-dot").style.display="none";renderStats();}
 }
 
 // DAILY
@@ -972,7 +978,7 @@ function renderProjects(filter){
   if(q.trim())filtered=filtered.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())||(p.next||"").toLowerCase().includes(q.toLowerCase()));
   filtered=sortProjects(filtered);
   if(filter==="all"&&!q.trim()){
-    const groups=[{key:"critico",label:"CRITICAL"},{key:"produccion",label:"IN PRODUCTION"},{key:"listo",label:"READY TO SHIP"},{key:"gestion",label:"QUEUED"},{key:"aplazado",label:"ON HOLD"}];
+    const groups=[{key:"critico",label:"URGENT"},{key:"produccion",label:"IN PROGRESS"},{key:"listo",label:"READY TO SHIP"},{key:"gestion",label:"ON HOLD"},{key:"aplazado",label:"PARKED"}];
     let html="";
     groups.forEach(g=>{const items=filtered.filter(p=>p.status===g.key);if(!items.length)return;html+=`<div class="section-label">${g.label} [${pad(items.length)}]</div>`;items.forEach(p=>{html+=projCard(p);});});
     list.innerHTML=html||`<div style="font-size:14px;color:var(--text3);text-align:center;padding:20px;">> NO PROJECTS FOUND</div>`;
@@ -1133,6 +1139,124 @@ function renderHours(){
 function copyKanban(){const be=hourEntries.filter(e=>e.billable);if(!be.length)return;navigator.clipboard.writeText(be.map(e=>`${e.project} - ${e.hours}h`).join("\n")).then(()=>{const btn=document.getElementById("copy-btn");btn.textContent="COPIED!";setTimeout(()=>btn.textContent="COPY",2000);});}
 
 // BACKUP
+
+function renderStats(){
+  var total=projects.length;
+  var urgent=projects.filter(function(p){return p.status==="critico";}).length;
+  var inprog=projects.filter(function(p){return p.status==="produccion";}).length;
+  var onhold=projects.filter(function(p){return p.status==="gestion";}).length;
+  var ready=projects.filter(function(p){return p.status==="listo";}).length;
+  var parked=projects.filter(function(p){return p.status==="aplazado";}).length;
+
+  document.getElementById("stat-total").textContent=pad(total);
+  document.getElementById("stat-urgent").textContent=pad(urgent);
+  document.getElementById("stat-progress").textContent=pad(inprog);
+  document.getElementById("stat-hold").textContent=pad(onhold);
+
+  // Draw donut chart
+  var canvas=document.getElementById("stats-chart");
+  if(!canvas)return;
+  var ctx=canvas.getContext("2d");
+  var W=120,H=120,cx=60,cy=60,r=46,inner=28;
+  ctx.clearRect(0,0,W,H);
+
+  var segments=[
+    {val:urgent,color:"#ff2244",label:"URGENT"},
+    {val:inprog,color:"#9d4eff",label:"IN PROG"},
+    {val:onhold,color:"#ff8800",label:"ON HOLD"},
+    {val:ready,color:"#00ffff",label:"READY"},
+    {val:parked,color:"#7060a8",label:"PARKED"},
+  ].filter(function(s){return s.val>0;});
+
+  if(segments.length===0){
+    ctx.fillStyle="#7060a8";
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#08090d";
+    ctx.beginPath();ctx.arc(cx,cy,inner,0,Math.PI*2);ctx.fill();
+  } else {
+    var tot=segments.reduce(function(s,x){return s+x.val;},0);
+    var angle=-Math.PI/2;
+    segments.forEach(function(seg){
+      var sweep=(seg.val/tot)*Math.PI*2;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,angle,angle+sweep);
+      ctx.closePath();
+      ctx.fillStyle=seg.color;
+      ctx.fill();
+      angle+=sweep;
+    });
+    // hole
+    ctx.beginPath();ctx.arc(cx,cy,inner,0,Math.PI*2);
+    ctx.fillStyle="#08090d";ctx.fill();
+    // center text
+    ctx.fillStyle="#9d4eff";
+    ctx.font="bold 14px 'Press Start 2P',monospace";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(String(total).padStart(2,"0"),cx,cy);
+  }
+
+  // Legend
+  var legend=document.getElementById("chart-legend");
+  legend.innerHTML=segments.map(function(s){
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+      +'<span style="width:10px;height:10px;background:'+s.color+';display:inline-block;flex-shrink:0;"></span>'
+      +'<span style="font-family:var(--font-head);font-size:6px;color:var(--text2);">'+s.label+'</span>'
+      +'<span style="font-family:var(--font-head);font-size:8px;color:'+s.color+';margin-left:auto;">'+pad(s.val)+'</span>'
+      +'</div>';
+  }).join("");
+
+  // Upcoming deadlines (next 60 days)
+  var now=new Date();
+  var soon=projects.filter(function(p){
+    if(!p.deadline||p.status==="aplazado")return false;
+    var d=new Date(p.deadline);
+    var diff=(d-now)/86400000;
+    return diff>=-1&&diff<=60;
+  }).sort(function(a,b){return new Date(a.deadline)-new Date(b.deadline);});
+
+  var dl=document.getElementById("upcoming-deadlines");
+  if(!soon.length){
+    dl.innerHTML='<div style="font-size:13px;color:var(--text3);">> NO DEADLINES IN NEXT 60 DAYS</div>';
+  } else {
+    dl.innerHTML=soon.slice(0,6).map(function(p){
+      var d=Math.ceil((new Date(p.deadline)-now)/86400000);
+      var col=d<0?"var(--red)":d<=7?"var(--amber)":"var(--text2)";
+      var dstr=d<0?"EXPIRED":d===0?"TODAY":d+"D";
+      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border2);">'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-family:var(--font-head);font-size:6px;color:var(--text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.name+'</div>'
+        +'<div style="font-size:12px;color:var(--text3);margin-top:2px;">'+p.deadline+'</div>'
+        +'</div>'
+        +'<span style="font-family:var(--font-head);font-size:8px;color:'+col+';flex-shrink:0;">'+dstr+'</span>'
+        +'</div>';
+    }).join("")
+    +(soon.length>6?'<div style="font-size:12px;color:var(--text3);padding-top:6px;">+' +(soon.length-6)+ ' more...</div>':"");
+  }
+
+  // Owner breakdown
+  var owners={};
+  projects.filter(function(p){return p.status!=="aplazado";}).forEach(function(p){
+    var o=p.owner||"Unassigned";
+    owners[o]=(owners[o]||0)+1;
+  });
+  var ownerList=Object.keys(owners).sort(function(a,b){return owners[b]-owners[a];});
+  var maxO=ownerList.length?owners[ownerList[0]]:1;
+  var ob=document.getElementById("owner-breakdown");
+  ob.innerHTML=ownerList.map(function(o){
+    var pct=Math.round(owners[o]/maxO*100);
+    return '<div style="margin-bottom:10px;">'
+      +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
+      +'<span style="font-family:var(--font-head);font-size:7px;color:var(--text2);">'+o+'</span>'
+      +'<span style="font-family:var(--font-head);font-size:7px;color:var(--accent);">'+pad(owners[o])+'</span>'
+      +'</div>'
+      +'<div style="height:8px;background:var(--bg2);border:1px solid var(--border2);">'
+      +'<div style="height:100%;width:'+pct+'%;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 6px,var(--accent-dark) 6px,var(--accent-dark) 8px);"></div>'
+      +'</div>'
+      +'</div>';
+  }).join("");
+}
+
 function exportData(){
   const d={v:2,date:new Date().toISOString(),projects,todos,hourEntries};
   const blob=new Blob([JSON.stringify(d,null,2)],{type:"application/json"});
